@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<!-- saved from url=(0069)https://facweb.plattsburgh.edu/steve.mansfield/MNREADtypesetting.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<title>MNREAD typesetter</title>
+<meta name="description" content="calculates (x,y) coords for each word in an MNREAD-format sentence">
+<meta name="author" content="Steve Mansfield">
+<style type="text/css">
+body {font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 10pt; margin: 1em;}
+p {width: 60em}
+button {margin-left: 3em}
+#sentenceIn { font-family: Lucida Console, Courier, monospace; font-size: 12pt}
+#display {font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 10pt;line-height: 1.5;  margin: 1em; padding: .5em; background-color: #eee;}
+.mncoord {font-size: 8pt}
+#rm {margin: 1ex; cursor: pointer; color: #33a}
+#about {display: none; margin: 1ex;} 
+img {border: 1px solid silver; padding: 3px}
+.postscript {color: #888; background-color:#ddd; width: 45em; padding: 1em}
+}
+</style>
+
+<script>
+String.prototype.stringWidth = function(){	
+	var stringWidth=0
+	this.split('').forEach(letter => { stringWidth+= widths[letter] });
+	return stringWidth;
+};
+
+{
+	var widths = {'a':909, 'b':1024, 'c':909, 'd':1024, 'e':909, 'f':682, 'g':1024, 'h':1024, 'i':569, 'j':569, 'k':1024, 'l':569, 'm':1593, 
+	'n':1024, 'o':1024, 'p':1024, 'q':1024, 'r':682, 's':797, 't':569, 'u':1024, 'v':1024, 'w':1479, 'x':1024, 'y':1024, 'z':909, ' ':512, 
+	'A':1479, 'B':1366, 'C':1366, 'D':1479, 'E':1251, 'F':1139, 'G':1479, 'H':1479, 'I':682, 'J':797, 'K':1479, 'L':1251, 'M':1821, 
+	'N':1479, 'O':1479, 'P':1139, 'Q':1479, 'R':1366, 'S':1139, 'T':1251, 'U':1479, 'V':1479, 'W':1933, 'X':1479, 'Y':1479, 'Z':1251, 
+	'units':2048};
+
+	var freq = {
+		'A':0.000847,	'a':0.063750,	'n':0.045500,
+		'B':0.000406,	'b':0.011152,	'o':0.062092,
+		'H':0.001652,	'c':0.019777,	'p':0.015286,
+		'I':0.002164,	'd':0.030624,	'q':0.000179,
+		'M':0.001274,	'e':0.095391,	'r':0.052750,
+		'O':0.001215,	'f':0.016415,	's':0.052041,
+		'R':0.000195,	'g':0.014529,	't':0.075289,
+		'S':0.000306,	'h':0.051495,	'u':0.027235,
+		'T':0.006711,	'i':0.048806,	'v':0.004288,
+		'W':0.000102,	'j':0.000711,	'w':0.020733,
+		'Y':0.001795,	'k':0.012127,	'x':0.000273,
+		'l':0.033785,	'y':0.016798,
+		' ':0.194365,	'm':0.017689,	'z':0.000252,
+	};
+
+	var delimiters = [
+		{left: '', right: ''},		//none
+		{left: "'", right: "'"},	//single quote
+		{left: '"', right: '"'},	//double quote
+		{left: '(', right: ')'},	//parentheses
+		{left: '&lt;', right: '&gt;'}	//angle brackets	
+		];
+
+	var sum=0;
+	for(letter in freq){
+		sum+= freq[letter]*widths[letter];
+	}
+
+	function MNword(word,x,y){
+		this.word=word;
+		this.x=(x/widths.units).toFixed(2);
+		this.y=y;
+	}
+
+	var boxWidth; 
+	var spaceWidth = " ".stringWidth(); 
+	var lineX;
+	var lineY;
+	var sentence = new Array;
+	var fit;
+
+	function setSentence(text){
+		var line = new Array;
+		var words= new Array;
+		var i,wordsWidth=0,nSpaces;
+		lineY=0;
+		lineX=0;
+		sentence.length=0;
+
+		words = text.split(" ");
+
+		for(i=0;i<words.length;i++){   //add words to line until the line 'fits'
+			line.push(words[i]);
+			wordsWidth += words[i].stringWidth();
+			nSpaces=line.length-1;
+
+			fit  = (boxWidth-wordsWidth)/(nSpaces*spaceWidth);
+			if(fit>=0.8 && fit <=1.25){
+				line.forEach(getCoords);
+				line.length=0;
+				wordsWidth=0;
+				lineX=0;
+				lineY++;
+			}
+		}
+		return sentence;
+	}
+
+	function getCoords(word){
+		w = new MNword(word,lineX,lineY)	
+		sentence.push(w);
+		lineX+= spaceWidth*fit + word.stringWidth();
+	}
+
+	window.onload=function(){
+		
+		var wbar=0;
+		for (letter of Object.keys(freq)){
+			wbar+=widths[letter]*freq[letter];
+		}
+		boxWidth= 20*wbar-widths[' '] ;
+		console.log(boxWidth);
+	}
+
+
+
+
+
+
+function typeset(){
+	//read input window
+	var sentences = new Array;
+	sentences = document.getElementById("sentenceIn").value.replace(/[^a-z \n]/gi, '').split('\n');
+
+	         
+	var ss=new Array;
+	var text='';
+	for(i=0;i<sentences.length;i++){
+	
+		ss=setSentence(sentences[i]);
+		for(j=0;j<ss.length;j++){
+			s=ss[j];
+			text+=
+				'<span class="mnword">'+delimiters[document.getElementById("delimeters").value].left+s.word+delimiters[document.getElementById("delimeters").value].right+'</span>' + 
+				'<span class="mncoord"> '+s.x+' '+s.y+'</span> ';	
+		}
+		text+='<br />';
+	}	
+	document.getElementById('display').innerHTML=text;
+}
+
+function readme(){
+	document.getElementById("about").style.display=
+	document.getElementById("about").style.display=="block" ?"none":"block";
+
+	document.getElementById("rm").innerHTML=
+	document.getElementById("rm").innerHTML== "READ ME" ? "HIDE ME":"READ ME";
+	
+	document.getElementById("sentenceIn").value=
+	document.getElementById("about").style.display=="block" ? 
+		'"You hoped it was a nice drive from our tiny barn to the sea "':
+		'';
+}
+	}
+
+
+	
+
+</script>
+
+</head>
+
+
+<body>
+<div id="rm" onclick="readme()">READ ME</div> <div id="about">
+<p>The MNREAD sentences have been designed to be printed using the Times-Roman font on three lines of left-right justified text so that they fit snugly into a bounding box with a width that is 7.761623 times the point size of the font. This web app calculates the coordinates for each word so that you can display the sentence so that it is consistent with the MNREAD specification.</p>
+<p><b>Example.</b> Enter "You hoped it was a nice drive from our tiny barn to the sea ", and press 'go'. The output is: You 0.00 0 hoped 1.98 0 it 4.69 0 was 5.50 0 a 7.32 0 nice 0.00 1 drive 1.92 1  ... The first number for each word is its horizontal coordinate (in multiples of the pointsize) and the second number specifies the line it is on (0, 1, or 2). The typeset sentence along with the coordinates for each word is shown in this diagram. </p>
+<img src="./MNREADtypesetting_files/XMN05demo.png">
+<p>Select the string delimiter that is appropriate for the programming language you are using to display the sentences. For example, PostScript uses parentheses to delimit literal strings. The following script will typeset the sentence in PostScript.
+
+</p><div class="postscript"><pre>%!PS-Adobe-3.0
+
+/mnread { 
+  count 3 idiv {neg moveto show} repeat  
+} def 
+
+/Times-Roman findfont setfont  
+72 400 translate 40 dup scale  
+
+(You) 0.00 0 (hoped) 1.98 0 (it) 4.69 0 (was) 5.50 0 (a) 7.32 0 
+  (nice) 0.00 1 (drive) 1.92 1 (from) 4.23 1 (our) 6.43 1 
+  (tiny) 0.00 2 (barn) 1.84 2 (to) 3.91 2 (the) 4.97 2 (sea) 6.48 2 
+mnread
+ 
+showpage 
+</pre></div>
+
+
+
+
+
+</div>
+
+<textarea cols="63" rows="10" id="sentenceIn" placeholder="enter MNREAD sentences here, one per line, choose your preferred string delimiter, then press &#39;go&#39;"></textarea>
+<br>String delimiter: <select id="delimeters">
+
+<option value="0">none</option>
+<option value="1">'single quotes'</option>
+<option value="2">"double quotes"</option>
+<option value="3">(parentheses)</option>
+<option value="4">&lt;angle brackets&gt;</option>
+</select>
+
+<button onclick="typeset()">go</button>
+
+<div id="display"></div>
+
+
+
+
+</body></html>
