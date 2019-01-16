@@ -1053,7 +1053,6 @@
 "I always sing songs for our uncle while we are eating lunch "
 "I often write poems with our aunt while we are eating lunch "
 "They have to read a book to your father before eating lunch "
-"SET "
 "You often wish we did not have to sing songs to your sister "
 "You will often like to sing songs while we are going to bed "
 "I will often need to clean the bathroom before going to bed "
